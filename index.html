@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nomin Access Portal — Test</title>
+  <style>
+    :root{
+      --bg:#0b0510;
+      --neon:#7c1eff; /* neon purple */
+      --neon-2:#b86eff;
+      --glass: rgba(255,255,255,0.04);
+      --card: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Arial;}
+    body{
+      background: radial-gradient(1200px 600px at 15% 20%, rgba(124,30,255,0.08), transparent),
+                  radial-gradient(900px 500px at 85% 80%, rgba(184,110,255,0.06), transparent),
+                  var(--bg);
+      color: #f1eef9;
+      overflow:hidden;
+    }
+
+    /* Neon floating background */
+    .stars{
+      position:fixed;inset:0;pointer-events:none;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(124,30,255,0.08) 0 2px, transparent 3px),
+        radial-gradient(circle at 70% 60%, rgba(184,110,255,0.06) 0 2px, transparent 3px);
+      opacity:0.9;
+      mix-blend-mode:screen;
+    }
+
+    /* Locked overlay */
+    .lock-screen{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background: linear-gradient(180deg, rgba(5,3,8,0.8), rgba(5,3,8,0.6));
+      z-index:50;backdrop-filter: blur(6px);
+      transition:opacity .8s ease, transform .6s ease;
+    }
+    .lock-card{
+      width:360px; max-width:90%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px; padding:28px; text-align:center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 24px rgba(124,30,255,0.06) inset;
+      border: 1px solid rgba(124,30,255,0.14);
+    }
+    h1{margin:0 0 6px;font-size:20px;letter-spacing:0.6px}
+    p.sub{margin:0 0 18px;color:rgba(241,238,249,0.72);font-size:13px}
+
+    .code-input{
+      display:flex;gap:10px;justify-content:center;margin-bottom:14px;
+    }
+    input[type="text"]{
+      flex:1;padding:12px;border-radius:10px;border:none;outline:none;
+      background:var(--glass);color:inherit;font-size:15px;padding-left:14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 12px rgba(124,30,255,0.03) inset;
+    }
+    button.btn{
+      padding:10px 14px;border-radius:10px;border:none;cursor:pointer;
+      background:linear-gradient(90deg,var(--neon),var(--neon-2)); color:#0b0510;
+      font-weight:700; box-shadow: 0 6px 18px rgba(124,30,255,0.25);
+    }
+    .hint{font-size:12px;color:rgba(241,238,249,0.6);margin-top:8px}
+
+    /* Main content */
+    .site{
+      position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+      padding:40px 28px;opacity:0;transform:translateY(20px);transition:opacity .8s ease, transform .8s ease;
+    }
+    .site.visible{opacity:1;transform:none}
+    .neon-title{
+      font-size:34px;margin-top:28px;margin-bottom:8px;
+      text-shadow:
+        0 0 12px rgba(124,30,255,0.9),
+        0 0 30px rgba(184,110,255,0.6),
+        0 2px 6px rgba(0,0,0,0.6);
+      letter-spacing:1px;
+    }
+    .subline{color:rgba(241,238,249,0.75);margin-bottom:18px}
+
+    .buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+    .card{
+      min-width:150px;padding:16px;border-radius:14px;background:var(--card);border:1px solid rgba(255,255,255,0.02);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+      text-align:center;
+    }
+    .btn-ghost{
+      margin-top:10px;padding:8px 10px;border-radius:10px;border:none;background:transparent;color:var(--neon);
+      cursor:pointer;font-weight:700; text-transform:uppercase;letter-spacing:0.6px;
+    }
+
+    /* unlock animation */
+    .unlock-glow{
+      position:fixed;inset:0;pointer-events:none;z-index:40;opacity:0;transition:opacity .9s ease;
+      background: radial-gradient(500px 300px at 50% 30%, rgba(124,30,255,0.14), transparent),
+                  radial-gradient(700px 400px at 20% 80%, rgba(184,110,255,0.08), transparent);
+      mix-blend-mode:screen;
+    }
+    .unlock-glow.active{opacity:1}
+
+    /* secret badge */
+    .secret{display:inline-block;margin-top:10px;padding:8px 10px;border-radius:999px;border:1px dashed rgba(255,255,255,0.06);font-size:12px;color:rgba(241,238,249,0.8)}
+    footer{position:fixed;bottom:18px;left:18px;font-size:12px;color:rgba(241,238,249,0.5)}
+    @media (max-width:420px){
+      .neon-title{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <!-- LOCK SCREEN -->
+  <div class="lock-screen" id="lock">
+    <div class="lock-card" role="dialog" aria-modal="true" aria-label="Nomin access lock">
+      <h1>ACCESS LOCKED</h1>
+      <p class="sub">Only true friends know the code. Enter it to reveal the surprise.</p>
+
+      <div class="code-input">
+        <input id="codeIn" type="text" placeholder="Enter code (case-insensitive)" aria-label="unlock code" />
+        <button class="btn" id="tryBtn">Enter</button>
+      </div>
+
+      <div id="feedback" class="hint">Tip: try something meaningful like a birthday or nickname.</div>
+    </div>
+  </div>
+
+  <!-- unlock glow -->
+  <div class="unlock-glow" id="glow"></div>
+
+  <!-- MAIN SITE (hidden until unlock) -->
+  <main class="site" id="site">
+    <div style="text-align:center">
+      <div class="neon-title">Happy Birthday, Nomin 🎉</div>
+      <div class="subline">Welcome to your Access Portal — open everything and explore ✨</div>
+      <div class="buttons">
+        <div class="card">
+          <div style="font-weight:700">Surprise Message</div>
+          <div class="hint" style="margin-top:8px">A special message waits for you.</div>
+          <button class="btn-ghost" id="msgBtn">Open message</button>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Gift Box</div>
+          <div class="hint" style="margin-top:8px">Click to unwrap</div>
+          <button class="btn-ghost" id="giftBtn">Unwrap</button>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Memory Zone</div>
+          <div class="hint" style="margin-top:8px">Photos & timeline</div>
+          <button class="btn-ghost" id="memBtn">Open gallery</button>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Music</div>
+          <div class="hint" style="margin-top:8px">Toggle background music</div>
+          <button class="btn-ghost" id="musicToggle">Play / Pause</button>
+          <div class="hint" style="margin-top:6px"><small>Replace the audio src in code with an online file.</small></div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <span class="secret" id="secretBadge">Secret Level: Locked</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>Test build — unlock code is <strong>NOMIN23</strong></footer>
+
+  <!-- audio (leave src empty or paste a direct mp3 url from an online source you trust) -->
+  <audio id="bgAudio" src="" loop preload="none"></audio>
+
+  <script>
+    // ========== CONFIG ==========
+    const UNLOCK_CODE = "NOMIN23"; // case-insensitive
+    const SECOND_SECRET_CODE = "STAR"; // for the hidden puzzle
+    // ============================
+
+    const lock = document.getElementById('lock');
+    const codeIn = document.getElementById('codeIn');
+    const tryBtn = document.getElementById('tryBtn');
+    const feedback = document.getElementById('feedback');
+    const site = document.getElementById('site');
+    const glow = document.getElementById('glow');
+
+    const msgBtn = document.getElementById('msgBtn');
+    const giftBtn = document.getElementById('giftBtn');
+    const memBtn = document.getElementById('memBtn');
+    const musicToggle = document.getElementById('musicToggle');
+    const secretBadge = document.getElementById('secretBadge');
+    const bgAudio = document.getElementById('bgAudio');
+
+    // quick focus
+    codeIn.focus();
+
+    function normalize(s){ return (s||"").trim().toUpperCase(); }
+
+    function showFeedback(txt, good=false){
+      feedback.textContent = txt;
+      feedback.style.color = good ? "#bfffbf" : "rgba(241,238,249,0.76)";
+    }
+
+    // unlock animation + reveal
+    function unlockPortal(){
+      // glow flash
+      glow.classList.add('active');
+      // small pulse then reveal
+      setTimeout(()=> {
+        lock.style.opacity = "0";
+        lock.style.transform = "scale(.98)";
+      }, 200);
+      setTimeout(()=>{
+        lock.style.display = "none";
+        site.classList.add('visible');
+      }, 900);
+      // remove glow after a while
+      setTimeout(()=> glow.classList.remove('active'), 2200);
+    }
+
+    tryBtn.addEventListener('click', ()=> {
+      const val = normalize(codeIn.value);
+      if(!val){
+        showFeedback("Enter a code first.");
+        return;
+      }
+      if(val === normalize(UNLOCK_CODE)){
+        showFeedback("Code correct — unlocking...", true);
+        unlockPortal();
+      } else {
+        showFeedback("Wrong code. Try again.");
+        // subtle shake
+        document.querySelector('.lock-card').animate([
+          { transform: 'translateX(0)' },
+          { transform: 'translateX(-8px)' },
+          { transform: 'translateX(8px)' },
+          { transform: 'translateX(0)' }
+        ], { duration: 420 });
+      }
+    });
+
+    // allow Enter key
+    codeIn.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') tryBtn.click();
+    });
+
+    // ---------- site interactions ----------
+    msgBtn.addEventListener('click', ()=> {
+      alert("Hey Nomin! 🎉\n\nHappy Birthday — hope your day is full of laughs and good surprises. From: Anda");
+    });
+
+    giftBtn.addEventListener('click', ()=> {
+      // simple unwrap animation + reveal
+      const gift = document.createElement('div');
+      gift.style.position = 'fixed';gift.style.left='50%';gift.style.top='50%';
+      gift.style.transform='translate(-50%,-50%) scale(0.8)';gift.style.zIndex=60;
+      gift.style.padding='26px';gift.style.borderRadius='14px';gift.style.background='linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))';
+      gift.style.boxShadow='0 12px 40px rgba(0,0,0,0.7)';
+      gift.innerHTML = '<div style="font-weight:800;font-size:18px;color:var(--neon)">Unwrapping...</div>';
+      document.body.appendChild(gift);
+      // animate
+      gift.animate([{transform:'translate(-50%,-50%) scale(0.8)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:500,fill:'forwards'});
+      setTimeout(()=> {
+        gift.innerHTML = '<div style="font-weight:800;font-size:20px;color:var(--neon)">🎁 Surprise!</div><div style="margin-top:8px">A little memory: remember when we...</div>';
+        const btn=document.createElement('button'); btn.textContent='Close'; btn.className='btn'; btn.style.marginTop='12px';
+        btn.onclick=()=> gift.remove();
+        gift.appendChild(btn);
+      },700);
+    });
+
+    memBtn.addEventListener('click', ()=> {
+      // simple placeholder gallery (you can replace with actual images)
+      const list = [
+        "Photo 1: School trip",
+        "Photo 2: Funny selfie",
+        "Photo 3: That time we..."];
+      alert("Memory Zone\n\n" + list.join("\n"));
+    });
+
+    // music toggle
+    let playing=false;
+    musicToggle.addEventListener('click', ()=>{
+      // If user hasn't added an audio src, prompt instruction
+      if(!bgAudio.src){
+        const add = confirm("No audio set. Press OK to add a sample online audio URL now (you'll paste a direct mp3 link).");
+        if(add){
+          const url = prompt("Paste an online mp3 URL (direct link):");
+          if(url) bgAudio.src = url;
+          else return;
+        } else return;
+      }
+      if(!playing){
+        bgAudio.play().then(()=> {
+          playing=true; musicToggle.textContent='Pause';
+        }).catch(err=>{
+          alert("Couldn't play audio automatically — maybe browser requires a user gesture. Click Play again.");
+        });
+      } else {
+        bgAudio.pause(); playing=false; musicToggle.textContent='Play / Pause';
+      }
+    });
+
+    // hidden second puzzle: click the secret badge to enter second code
+    secretBadge.addEventListener('click', ()=> {
+      const v = prompt("Enter secret word to unlock Level 2:");
+      if(!v) return;
+      if(normalize(v) === normalize(SECOND_SECRET_CODE)){
+        secretBadge.textContent = "Secret Level: UNLOCKED ✨";
+        secretBadge.style.border='1px solid rgba(184,110,255,0.25)';
+        secretBadge.style.boxShadow='0 8px 20px rgba(124,30,255,0.12)';
+        // reveal extra easter egg
+        setTimeout(()=> alert("EASTER EGG:\nYou found a secret message! — You're awesome <3"),120);
+      } else {
+        alert("Not this time! Hint: look up at the sky.");
+      }
+    });
+
+    // small accessibility: if user clicks outside of the lock card focus input
+    document.addEventListener('click', (e)=> {
+      if(lock.style.display !== 'none' && !document.querySelector('.lock-card').contains(e.target)){
+        codeIn.focus();
+      }
+    });
+
+    // OPTIONAL: For testing, you can automatically prefill the code (uncomment for quick testing)
+    // codeIn.value = "NOMIN23";
+  </script>
+</body>
+</html>
