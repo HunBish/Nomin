@@ -1,1 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Nomin — Neon Portal (Full)</title>
+<style>
+:root{
+  --bg:#0b0510;
+  --neon:#7c1eff;
+  --neon-2:#b86eff;
+  --glass:rgba(255,255,255,0.04);
+  --card:rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#f1eef9;overflow:hidden}
+#stars{position:fixed;inset:0;pointer-events:none}
+.star{position:absolute;border-radius:50%;background:rgba(255,255,255,0.95);width:2px;height:2px;opacity:.9}
+.lock-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:50}
+.lock-box{width:360px;background:rgba(255,255,255,0.04);padding:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 0 30px rgba(124,30,255,0.18);text-align:center}
+.lock-box h2{margin:6px 0 12px}
+.lock-box input{width:92%;padding:12px;border-radius:10px;border:none;outline:none;background:var(--glass);color:white;margin-bottom:12px;font-size:15px}
+.btn{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--neon),var(--neon-2));border:none;cursor:pointer;color:#0a0510;font-weight:700}
+.popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(12,5,20,0.98);border:2px solid var(--neon);border-radius:16px;padding:22px;z-index:80;width:360px;box-shadow:0 0 40px var(--neon)}
+.close-btn{position:absolute;top:8px;right:8px;background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--neon);font-weight:700}
+.site{opacity:0;transform:translateY(20px);transition:0.8s ease;text-align:center;padding-top:28px}
+.site.visible{opacity:1;transform:translateY(0)}
+.neon-title{font-size:38px;margin-top:8px;text-shadow:0 0 14px var(--neon)}
+.subline{opacity:.7;margin-bottom:12px}
+.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:20px}
+.card{background:var(--card);padding:16px;width:170px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,0.04)}
+.btn-ghost{margin-top:10px;padding:8px 10px;background:transparent;border:none;color:var(--neon);cursor:pointer;font-weight:700}
+.island{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(12,5,20,0.98);border:2px solid var(--neon);border-radius:16px;padding:20px;width:480px;max-width:calc(100% - 36px);text-align:center;box-shadow:0 0 30px var(--neon);z-index:90}
+.island h2{color:var(--neon);margin-bottom:10px}
+.footer-controls{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;display:flex;gap:12px}
+.countdown{display:flex;gap:10px}
+.countdown .unit{background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;width:72px;text-align:center;border:1px solid rgba(255,255,255,0.03)}
+.confetti-canvas{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:100}
+.small{font-size:13px;opacity:.8}
+.preview-img{width:90px;height:60px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+.now-playing{color:var(--neon);font-weight:700}
+.progress-custom{height:8px;background:rgba(255,255,255,0.06);border-radius:8px;overflow:hidden}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--neon),var(--neon-2));border-radius:8px}
+form input, form textarea{width:92%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.02);color:white;outline:none}
+form button{margin-top:8px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<!-- LOCK -->
+<div class="lock-screen" id="lock">
+  <div class="lock-box">
+    <h2>Enter Code</h2>
+    <input id="codeIn" placeholder="Nuuts ugee hel" />
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+      <button class="btn" id="enterBtn">Enter</button>
+    </div>
+    <div id="feedback" style="margin-top:8px;opacity:.8;font-size:13px">Hint: 23</div>
+  </div>
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+  <button class="close-btn" onclick="closePopup()">✖</button>
+  <h2>Welcome Nomin 🎉</h2>
+  <p>Tursun udruu goy temdegleeree ✨</p>
+  <div style="margin-top:12px"><button class="btn" onclick="continuePortal()">Continue</button></div>
+</div>
+
+<!-- MAIN SITE -->
+<div class="site" id="site">
+  <div class="neon-title">Welcome, Nomin ✨</div>
+  <div class="subline">To my purple</div>
+
+  <div class="buttons">
+    <div class="card"><b>Surprise Letter</b><div><button class="btn-ghost" onclick="openIsland('letterIsland')">Open</button></div></div>
+    <div class="card"><b>Random Compliment</b><div><button class="btn-ghost" onclick="openComp()">Get</button></div></div>
+    <div class="card"><b>Photo Carousel</b><div><button class="btn-ghost" onclick="openGallery()">Open</button></div></div>
+    <div class="card"><b>Background Music</b><div><button class="btn-ghost" onclick="openIsland('musicIsland')">Select</button></div></div>
+    <div class="card"><b>Confetti Burst</b><div><button class="btn-ghost" onclick="popConfetti()">Pop</button></div></div>
+    <div class="card"><b>Send Me a Message</b><div><button class="btn-ghost" onclick="openIsland('messageIsland')">Open</button></div></div>
+  </div>
+</div>
+
+<!-- LETTER -->
+<div class="island" id="letterIsland">
+  <button class="close-btn" onclick="closeIsland('letterIsland')">✖</button>
+  <h2>Surprise Letter 💌</h2>
+  <div id="letterArea" style="min-height:120px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)">
+    <p class="small">(Click the sparkle below to reveal)</p>
+    <div style="margin-top:10px"><button class="btn" onclick="revealLetter()">✨ Reveal</button></div>
+  </div>
+</div>
+
+<!-- COMPLIMENT -->
+<div class="island" id="compIsland">
+  <button class="close-btn" onclick="closeIsland('compIsland')">✖</button>
+  <h2>Compliment 💜</h2>
+  <p id="compText" style="min-height:50px"></p>
+</div>
+
+<!-- GALLERY -->
+<div class="island" id="galleryIsland">
+  <button class="close-btn" onclick="closeIsland('galleryIsland')">✖</button>
+  <h2>Gallery 📸</h2>
+  <div id="carousel" style="min-height:160px; display:flex; align-items:center; justify-content:center;">
+    <h3 style="color:var(--neon); margin-top:20px;">Still under construction 🚧</h3>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:8px; justify-content:center;">
+    <img class="preview-img" src="/mnt/data/0e212405-d841-41aa-aef1-7ee6235863c6.png" alt="preview" />
+    <img class="preview-img" src="/mnt/data/0e212405-d841-41aa-aef1-7ee6235863c6.png" alt="preview" />
+    <img class="preview-img" src="/mnt/data/0e212405-d841-41aa-aef1-7ee6235863c6.png" alt="preview" />
+  </div>
+</div>
+
+<!-- MUSIC -->
+<div class="island" id="musicIsland" style="padding:18px; max-width:520px;">
+  <button class="close-btn" onclick="closeIsland('musicIsland')">✖</button>
+  <h2>Music 🎵</h2>
+  <p class="small">Control your background tracks — you can upload local MP3s or use direct links</p>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;" class="music-buttons">
+    <button class="btn-ghost" onclick="playTrack('song1')">Wave to Earth - Peach Eyes</button>
+    <button class="btn-ghost" onclick="playTrack('song2')">Wave to Earth - Light</button>
+    <button class="btn-ghost" onclick="stopMusic()" style="color:#ff7b9b;">Stop ⛔</button>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;">
+    <label style="font-size:13px;opacity:0.9;">Upload MP3 1<input id="file1" type="file" accept="audio/*" style="display:block;margin-top:6px"></label>
+    <label style="font-size:13px;opacity:0.9;">Upload MP3 2<input id="file2" type="file" accept="audio/*" style="display:block;margin-top:6px"></label>
+  </div>
+  <div id="playerUI" style="margin-top:16px;">
+    <div id="nowPlaying" class="now-playing">Now Playing: None</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+      <button onclick="togglePlayPause()" id="playPauseBtn" class="btn-ghost" style="padding:8px 12px;">▶ Play</button>
+      <div style="flex:1;">
+        <div class="progress-custom" aria-hidden="true">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <input id="progressBar" type="range" min="0" max="100" value="0" style="width:100%; margin-top:8px; accent-color:var(--neon);">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.85;margin-top:8px;">
+      <span id="currentTime">0:00</span>
+      <span id="duration">0:00</span>
+    </div>
+    <div style="margin-top:10px;">
+      <label style="font-size:13px;opacity:0.9;">Volume</label>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5" style="width:100%; margin-top:8px; accent-color:var(--neon);">
+    </div>
+    <div style="margin-top:10px;font-size:12px;opacity:0.85;text-align:center;">
+      <div>Or paste direct MP3 URLs (optional):</div>
+      <input id="url1" placeholder="Direct MP3 URL for track 1">
+      <input id="url2" placeholder="Direct MP3 URL for track 2">
+      <div style="margin-top:8px"><button class="btn" onclick="applyUrls()">Apply URLs</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGE ISLAND -->
+<div class="island" id="messageIsland">
+  <button class="close-btn" onclick="closeIsland('messageIsland')">✖</button>
+  <h2>Send Me a Message ✉️</h2>
+  <form action="https://formspree.io/f/xgvqynbp" method="POST" target="_blank">
+    <input type="text" name="name" placeholder="Your Name" required>
+    <input type="email" name="email" placeholder="Your Email" required>
+    <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+    <button type="submit" class="btn">Send</button>
+  </form>
+</div>
+
+<!-- CONFETTI CANVAS -->
+<canvas id="confetti" class="confetti-canvas"></canvas>
+
+<!-- COUNTDOWN -->
+<div class="footer-controls">
+  <div class="countdown">
+    <div class="unit"><div id="d">00</div><div class="small">days</div></div>
+    <div class="unit"><div id="h">00</div><div class="small">hrs</div></div>
+    <div class="unit"><div id="m">00</div><div class="small">min</div></div>
+    <div class="unit"><div id="s">00</div><div class="small">sec</div></div>
+  </div>
+</div>
+
+<script>
+/* ---------- STARS ---------- */
+for(let i=0;i<90;i++){const s=document.createElement('div');s.className='star';const size=Math.random()*3+1;s.style.width=s.style.height=size+'px';s.style.top=(Math.random()*100)+'vh';s.style.left=(Math.random()*100)+'vw';s.style.opacity=0.6+Math.random()*0.4;document.getElementById('stars').appendChild(s)}
+
+/* ---------- LOCK & POPUP ---------- */
+const CORRECT_CODE = 'NOMIN23';
+const lock=document.getElementById('lock');const popup=document.getElementById('popup');const site=document.getElementById('site');const codeIn=document.getElementById('codeIn');
+function unlock(){lock.style.display='none';popup.style.display='block'}
+function tryUnlock(){ if(codeIn.value.trim().toUpperCase()===CORRECT_CODE){ unlock() } else { document.getElementById('feedback').textContent='Try again'; document.getElementById('feedback').style.color='#f88' } }
+document.getElementById('enterBtn').onclick=tryUnlock; codeIn.addEventListener('keyup',e=>{ if(e.key==='Enter') tryUnlock() });
+function closePopup(){ popup.style.display='none'; site.classList.add('visible') }
+function continuePortal(){ closePopup(); if(tracksManaged.song1) playTrack('song1'); }
+
+/* ---------- ISLAND HELPERS ---------- */
+function openIsland(id){ document.getElementById(id).style.display='block' }
+function closeIsland(id){ document.getElementById(id).style.display='none' }
+
+/* ---------- COMPLIMENT ---------- */
+const compliments=["You shine fr 💜","You smile light up the world 💜","In case nobody told you today, you are doing great ✨","Unreal cute ngl 💟"];
+function randomComp(){ return compliments[Math.floor(Math.random()*compliments.length)] }
+function openComp(){ document.getElementById('compText').textContent=randomComp(); openIsland('compIsland') }
+
+/* ---------- LETTER ---------- */
+function revealLetter(){ const area=document.getElementById('letterArea'); area.innerHTML=`<div style="text-align:left"><p>Dear Nomin,</p><p>Happy Birthday! 💜
+
+I just want you to know how much you mean to me. This past year with you has truly been the peak time of my life every moment every laugh we shared is etched into my brain. From our random little trips to those long talks where time seemed to freeze somehow youve made life better by being in it.
+
+ I’m so grateful for the memories weve made, and I can’t wait for all the adventures still waiting for us.I hope distance doesnt end this friendship
+
+Hope your day be as magical as you are. Thank you for being you .aaans cringle naasiisho 💫
+
+ 💜</p><p style="text-align:right;margin-top:12px;">Someone Named I </p></div>` }
+
+/* ---------- GALLERY ---------- */
+function openGallery(){ const island=document.getElementById('galleryIsland'); island.style.display='block'; const carousel=document.getElementById('carousel'); carousel.innerHTML = '<h3 style="color:var(--neon); margin-top:20px;">Still under construction 🚧</h3>'; }
+
+/* ---------- COUNTDOWN  ---------- */
+function updateCountdown(){ const now=new Date(); let target=new Date(now.getFullYear(),10,23,0,0,0); if(now>target) target.setFullYear(target.getFullYear()+1); const diff=target-now; const d=Math.floor(diff/86400000); const h=Math.floor((diff/3600000)%24); const m=Math.floor((diff/60000)%60); const s=Math.floor((diff/1000)%60); document.getElementById('d').textContent=String(d).padStart(2,'0'); document.getElementById('h').textContent=String(h).padStart(2,'0'); document.getElementById('m').textContent=String(m).padStart(2,'0'); document.getElementById('s').textContent=String(s).padStart(2,'0'); requestAnimationFrame(updateCountdown); }
+updateCountdown();
+
+/* ---------- CONFETTI ---------- */
+const confettiCanvas=document.getElementById('confetti');const ctx=confettiCanvas.getContext('2d');
+function resizeCanvas(){ confettiCanvas.width=window.innerWidth;confettiCanvas.height=window.innerHeight}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+let confettiPieces=[];
+function popConfetti(){ confettiPieces=[];for(let i=0;i<180;i++){confettiPieces.push({x:Math.random()*confettiCanvas.width,y:Math.random()*confettiCanvas.height-50,w:6+Math.random()*8,h:8+Math.random()*8,dx:(Math.random()-0.5)*6,dy:2+Math.random()*6,rot:Math.random()*360,dr:Math.random()*8,clr:`hsl(${Math.random()*360},80%,65%)`})}animateConfetti()}
+let confettiTimer=null;
+function animateConfetti(){ if(confettiTimer) cancelAnimationFrame(confettiTimer); function frame(){ ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); for(const p of confettiPieces){ p.x+=p.dx; p.y+=p.dy; p.dy+=0.12; p.rot+=p.dr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180); ctx.fillStyle=p.clr; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); } confettiPieces=confettiPieces.filter(p=>p.y<confettiCanvas.height+50); if(confettiPieces.length>0) confettiTimer=requestAnimationFrame(frame); else cancelAnimationFrame(confettiTimer) } frame() }
+
+/* ---------- MUSIC ---------- */
+const audio = new Audio(); audio.loop = true; audio.volume = 0.5; let currentTrack = null; const progressBar = document.getElementById('progressBar'); const progressFill = document.getElementById('progressFill'); const nowPlaying = document.getElementById('nowPlaying'); const playPauseBtn = document.getElementById('playPauseBtn'); const currentTimeEl = document.getElementById('currentTime'); const durationEl = document.getElementById('duration'); const volumeControl = document.getElementById('volume'); const file1 = document.getElementById('file1'); const file2 = document.getElementById('file2'); const url1 = document.getElementById('url1'); const url2 = document.getElementById('url2'); const tracksManaged = { song1:null, song2:null }; file1.addEventListener('change',(e)=>{const f=e.target.files&&e.target.files[0];if(f){if(tracksManaged.song1&&tracksManaged.song1.startsWith('blob:')) URL.revokeObjectURL(tracksManaged.song1); tracksManaged.song1=URL.createObjectURL(f); nowPlayingFlash('Track 1 uploaded')}}); file2.addEventListener('change',(e)=>{const f=e.target.files&&e.target.files[0];if(f){if(tracksManaged.song2&&tracksManaged.song2.startsWith('blob:')) URL.revokeObjectURL(tracksManaged.song2); tracksManaged.song2=URL.createObjectURL(f); nowPlayingFlash('Track 2 uploaded')}}); function applyUrls(){ const u1=url1.value.trim(); const u2=url2.value.trim(); if(u1) tracksManaged.song1=u1; if(u2) tracksManaged.song2=u2; nowPlayingFlash('URLs applied'); } function playTrack(key){ if(!tracksManaged[key]){ alert('No audio configured for this track. Upload an MP3 or paste a direct MP3 URL first.'); return;} if(currentTrack!==key){ audio.src=tracksManaged[key]; audio.play().catch(()=>{}); currentTrack=key; nowPlaying.textContent='Now Playing: '+(key==='song1'?'Peach Eyes':'Light'); playPauseBtn.textContent='Pause ❚❚';} else{togglePlayPause();}} function togglePlayPause(){if(audio.paused){audio.play().catch(()=>{}); playPauseBtn.textContent='Pause ❚❚';} else{audio.pause(); playPauseBtn.textContent='Play ▶';}} function stopMusic(){audio.pause(); audio.currentTime=0; currentTrack=null; nowPlaying.textContent='Now Playing: None'; playPauseBtn.textContent='Play ▶';} volumeControl.addEventListener('input',()=>{audio.volume=Number(volumeControl.value);}); audio.addEventListener('timeupdate',()=>{const prog=(audio.currentTime/audio.duration)*100; progressBar.value=isNaN(prog)?0:prog; progressFill.style.width=(isNaN(prog)?0:prog)+'%'; currentTimeEl.textContent=formatTime(audio.currentTime); durationEl.textContent=formatTime(audio.duration);}); progressBar.addEventListener('input',()=>{if(!audio.duration)return; audio.currentTime=(progressBar.value/100)*audio.duration;}); function formatTime(sec){if(isNaN(sec)||!isFinite(sec))return'0:00';const m=Math.floor(sec/60); const s=Math.floor(sec%60); return`${m}:${String(s).padStart(2,'0')}`;} function nowPlayingFlash(msg){const prev=nowPlaying.textContent; nowPlaying.textContent=msg; setTimeout(()=>{ nowPlaying.textContent=prev==='Now Playing: None'?'Now Playing: None':nowPlaying.textContent },900);}
+
+/* ---------- UX: Esc closes islands & click outside ---------- */
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.island').forEach(x=>x.style.display='none'); popup.style.display='none';}});
+window.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('island'))e.target.style.display='none';});
+</script>
+</body>
+</html>
 
